@@ -2,6 +2,7 @@
 PLUGIN = {}	-- Reference to own plugin object
 HANDY = {}	-- here, HANDY candy!
 COINY = {}		-- stay COINY, maaaaaan!
+HandyRequiredVersion = 2
 CHEST_WIDTH = 9
 eSaveMode_Paranoid = -1
 eSaveMode_Timed = 0
@@ -77,14 +78,20 @@ function Initialize( Plugin )
 	PLUGIN:SetName( "Trady" )
 	PLUGIN:SetVersion( 1 )
 	
+	COINY = PluginManager:GetPlugin( "Coiny" )
+	HANDY = cRoot:Get():GetPluginManager():GetPlugin( "Handy" )
+	local properHandy = HANDY:Call( "CheckForRequiedVersion", HandyRequiredVersion )
+	if( not properHandy ) then
+		LOGERROR( PLUGIN:GetName().." v"..PLUGIN:GetVersion().." needs Handy v"..HandyRequiredVersion..", shutting down" )
+		return false
+	end
+	
 	PluginManager = cRoot:Get():GetPluginManager()
 	cPluginManager.AddHook( cPluginManager.HOOK_PLAYER_LEFT_CLICK, OnPlayerLeftClick )
 	cPluginManager.AddHook( cPluginManager.HOOK_PLAYER_RIGHT_CLICK, OnPlayerRightClick )
 	cPluginManager.AddHook( cPluginManager.HOOK_PLAYER_BREAKING_BLOCK, OnPlayerBreakingBlock )
 	cPluginManager.AddHook( cPluginManager.HOOK_UPDATING_SIGN, OnUpdatingSign )
 	cPluginManager.AddHook( cPluginManager.HOOK_TICK, OnTick )
-	HANDY = PluginManager:GetPlugin( "Handy" )
-	COINY = PluginManager:GetPlugin( "Coiny" )
 	
 	--Plugin:AddWebTab( "Trady", HandleRequest_ChestShop )
 	LoadSettings()
