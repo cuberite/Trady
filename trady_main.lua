@@ -1,69 +1,3 @@
--- Global variables
-PLUGIN = {}	-- Reference to own plugin object
-HANDY = {}	-- here, HANDY candy!
-COINY = {}		-- stay COINY, maaaaaan!
-HandyRequiredVersion = 2
-CHEST_WIDTH = 9
-eSaveMode_Paranoid = -1
-eSaveMode_Timed = 0
-eSaveMode_Relaxed = 1
-eSaveMode_Dont = 100500
--- LOGICS
-ShopsData = {}
-TradersData = {}
-SaveTicksCounter = 0
--- SETTINGS
-SaveMode = eSaveMode_Timed
-SaveEveryNthTick = 2000
-FRACTIONAL_TRADE = true
-BARTER = false
-BarterItem = E_ITEM_GOLD_NUGGET
-HALT_SELF_TRADE = false
-USING_NON_OWNER_PROTECTION = true
-BREAKING_NON_OWNER_PROTECTION = true
--- MESSAGES
-MESSAGES = {}
-MESSAGES.success = "Success!"
-MESSAGES.partial_transfer = "Operation wasn't performed completely, but we did our best to please you!"
-
-MESSAGES.aborted_partial_transfer = "Fractional operations are disallowed server-wise"
-MESSAGES.banned_partial_transfer = "Fractional operations are disallowed by merchant"
-
-MESSAGES.player_no_money = "You can't afford it"
-MESSAGES.player_no_space = "You don't have SPAAAAAACE!"
-MESSAGES.no_items_in_shop = "Out of stock"
-MESSAGES.no_items_in_player = "You don't have any to sell"
-MESSAGES.not_enough_items = "Sorry, not enough stuff"
-MESSAGES.not_enough_space = "Not enough space in shop"
-
-MESSAGES.merchant_no_money = "Merchant can't afford it"
-MESSAGES.merchant_no_space = "Merchant can't take your coins :("
-MESSAGES.to_merchant_no_money = "Your shop needs MONEY (in order to buy things from strangers)"
-MESSAGES.to_merchant_no_space = "Hey, you, free your cash machine a bit, uh? Someone can't shut you up and give his money!"
-MESSAGES.to_merchant_not_enough_space = "Pssst, buddy! One of your shops is overloaded. Take care of it"
-
-
-FAIL_REASON = {}
-FAIL_REASON.aborted_partial_transfer = 0	-- aborted due to server-wise setting
-FAIL_REASON.banned_partial_transfer = 1		-- means it was banned by merchant
-FAIL_REASON.merchant_no_money = 2			-- overloaded cash machine
-FAIL_REASON.merchant_no_space = 3			-- overloaded cash machine
-FAIL_REASON.player_no_money = 4
-FAIL_REASON.player_no_space = 5
-FAIL_REASON.no_items_in_shop = 6
-FAIL_REASON.no_items_in_player = 7
-FAIL_REASON.not_enough_items = 8
-FAIL_REASON.not_enough_space = 9
-
-OPERATION_STATE = {}
-OPERATION_STATE.performed = false
-OPERATION_STATE.success = true
-OPERATION_STATE.fail_reason = FAIL_REASON.player_no_money
-OPERATION_STATE.partial = false
-OPERATION_STATE.ammount = 0
-OPERATION_STATE.money_ammount = 0
-OPERATION_STATE.itemID = 0
-OPERATION_STATE.merchantname = ""
 --[[
 TODO:
 - too much to write, lol
@@ -73,11 +7,84 @@ TODO:
 2. FIX: no chest, correct sign, reports "fill the chest"
 3. WEB panel to set shit up
 ]]
+
+-- Global variables
+PLUGIN = {}	-- Reference to own plugin object
+HANDY = {}	-- here, HANDY candy!
+COINY = {}		-- stay COINY, maaaaaan!
+HandyRequiredVersion = 2
+
+-- Logics
+ShopsData = {}
+TradersData = {}
+SaveTicksCounter = 0
+
+-- Save modes
+eSaveMode_Paranoid = -1
+eSaveMode_Timed = 0
+eSaveMode_Relaxed = 1
+eSaveMode_Dont = 100500
+
+-- Settings
+Settings = {}
+Settings.SaveMode = eSaveMode_Timed
+Settings.SaveEveryNthTick = 2000
+Settings.FractionalTrade = true
+Settings.Barter = false
+Settings.BarterItem = E_ITEM_GOLD_NUGGET
+Settings.HaltSelfTrade = false
+Settings.UsingProtection = true
+Settings.BreakingProtection = true
+-- Messages
+Messages = {}
+Messages.success = "Success!"
+Messages.partial_transfer = "Operation wasn't performed completely, but we did our best to please you!"
+
+Messages.aborted_partial_transfer = "Fractional operations are disallowed server-wise"
+Messages.banned_partial_transfer = "Fractional operations are disallowed by merchant"
+
+Messages.player_no_money = "You can't afford it"
+Messages.player_no_space = "You don't have SPAAAAAACE!"
+Messages.no_items_in_shop = "Out of stock"
+Messages.no_items_in_player = "You don't have any to sell"
+Messages.not_enough_items = "Sorry, not enough stuff"
+Messages.not_enough_space = "Not enough space in shop"
+
+Messages.merchant_no_money = "Merchant can't afford it"
+Messages.merchant_no_space = "Merchant can't take your coins :("
+Messages.to_merchant_no_money = "Your shop needs MONEY (in order to buy things from strangers)"
+Messages.to_merchant_no_space = "Hey, you, free your cash machine a bit, uh? Someone can't shut you up and give his money!"
+Messages.to_merchant_not_enough_space = "Pssst, buddy! One of your shops is overloaded. Take care of it"
+
+
+FailReason = {}
+FailReason.aborted_partial_transfer = 0	-- aborted due to server-wise setting
+FailReason.banned_partial_transfer = 1		-- means it was banned by merchant
+FailReason.merchant_no_money = 2			-- overloaded cash machine
+FailReason.merchant_no_space = 3			-- overloaded cash machine
+FailReason.player_no_money = 4
+FailReason.player_no_space = 5
+FailReason.no_items_in_shop = 6
+FailReason.no_items_in_player = 7
+FailReason.not_enough_items = 8
+FailReason.not_enough_space = 9
+
+OperationState = {}
+OperationState.performed = false
+OperationState.success = true
+OperationState.fail_reason = FailReason.player_no_money
+OperationState.partial = false
+OperationState.amount = 0
+OperationState.money_amount = 0
+OperationState.itemID = 0
+OperationState.merchantname = ""
+
 function Initialize( Plugin )
 	PLUGIN = Plugin
 	PLUGIN:SetName( "Trady" )
-	PLUGIN:SetVersion( 1 )
+	PLUGIN:SetVersion( 2 )
 	
+	PluginManager = cRoot:Get():GetPluginManager()
 	COINY = PluginManager:GetPlugin( "Coiny" )
 	HANDY = cRoot:Get():GetPluginManager():GetPlugin( "Handy" )
 	local properHandy = HANDY:Call( "CheckForRequiedVersion", HandyRequiredVersion )
@@ -86,7 +93,6 @@ function Initialize( Plugin )
 		return false
 	end
 	
-	PluginManager = cRoot:Get():GetPluginManager()
 	cPluginManager.AddHook( cPluginManager.HOOK_PLAYER_LEFT_CLICK, OnPlayerLeftClick )
 	cPluginManager.AddHook( cPluginManager.HOOK_PLAYER_RIGHT_CLICK, OnPlayerRightClick )
 	cPluginManager.AddHook( cPluginManager.HOOK_PLAYER_BREAKING_BLOCK, OnPlayerBreakingBlock )
@@ -102,32 +108,31 @@ end
 
 function OnDisable()
 	SaveSettings()
-	if( SaveMode ~= eSaveMode_Dont ) then
+	if( Settings.SaveMode ~= eSaveMode_Dont ) then
 		SaveData()
 	end
 	LOG( PLUGIN:GetName().." v"..PLUGIN:GetVersion().." is shutting down..." )
 end
 
 function OnTick()
-	if( SaveMode == eSaveMode_Timed ) then
+	if( Settings.SaveMode == eSaveMode_Timed ) then
 		SaveTicksCounter = SaveTicksCounter + 1
-		if( SaveTicksCounter == SaveEveryNthTick ) then
+		if( SaveTicksCounter == Settings.SaveEveryNthTick ) then
 			SaveTicksCounter = 0
 			SaveData()
 		end
 	end
 end
 --\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-function OnUpdatingSign( IN_world, IN_x, IN_y, IN_z, Line1, Line2, Line3, Line4, IN_player )
-	local _ownername = IN_player:GetName()
-	LOG( "Trady: updating sign! Lines: "..Line1..", "..Line2..", "..Line3..", "..Line4 )
+function OnUpdatingSign( inWorld, inX, inY, inZ, Line1, Line2, Line3, Line4, inPlayer )
+	local _ownername = inPlayer:GetName()
 	if( Line4 == "" ) then
 		local _split = LineSplit( Line1, ":" )
 		if( #_split == 2 ) then
-			local _from_chest_price = tonumber( _split[1] )	-- IN_player buys something from chest
-			local _to_chest_price = tonumber( _split[2] )		-- IN_player sells something to chest
-			local _ammount_override = -1
-			if( Line2 ~= "" ) then	_ammount_override = tonumber( Line2 )	end
+			local _from_chest_price = tonumber( _split[1] )	-- inPlayer buys something from chest
+			local _to_chest_price = tonumber( _split[2] )		-- inPlayer sells something to chest
+			local _amount_override = -1
+			if( Line2 ~= "" ) then	_amount_override = tonumber( Line2 )	end
 			local _fractional_trade = not HANDY:Call( "StringToBool", Line3 )
 			
 			Line1 = ""
@@ -135,12 +140,12 @@ function OnUpdatingSign( IN_world, IN_x, IN_y, IN_z, Line1, Line2, Line3, Line4,
 			Line3 = ""
 			Line4 = ""
 			
-			local _check = CheckShopChest( IN_player:GetWorld(), IN_x, IN_y - 1, IN_z )
+			local _check = CheckShopChest( inPlayer:GetWorld(), inX, inY - 1, inZ )
 			if( _check.foundStuff ) then
 				if( _check.clashingItems ) then
-					IN_player:SendMessage( "Shop wasn't created due to mixed items in chest" )
+					inPlayer:SendMessage( "Shop wasn't created due to mixed items in chest" )
 				else
-					if( _ammount_override > 0 ) then _check.count = _ammount_override	end
+					if( _amount_override > 0 ) then _check.count = _amount_override	end
 					Line1 = ItemTypeToString( _check.type )
 					Line2 = _check.count.." pieces"
 					Line3 = "/\\ ".._split[1].." : ".._split[2].." \\/"
@@ -150,21 +155,23 @@ function OnUpdatingSign( IN_world, IN_x, IN_y, IN_z, Line1, Line2, Line3, Line4,
 					if( _split[2] == "-" ) then
 						_to_chest_price = -1
 					end
-					Line4 = IN_player:GetName()
+					Line4 = inPlayer:GetName()
 					
-					RegisterShop( IN_player:GetWorld(), IN_player:GetName(), IN_x, IN_y, IN_z, _check.type, _check.count, _to_chest_price, _from_chest_price, _fractional_trade )
-					LOG( PLUGIN:GetName().." reporting: created a shop at( "..IN_x..":"..IN_y..":"..IN_z.." ) by ".._ownername.." ["..Line1.."]" )
-					if( SaveMode == eSaveMode_Paranoid ) then
+					RegisterShop( inPlayer:GetWorld(), inPlayer:GetName(), inX, inY, inZ, _check.type, _check.count, _to_chest_price, _from_chest_price, _fractional_trade )
+					local countString = HANDY:Call( "PluralString", _check.count, " piece", " pieces" )
+					inPlayer:SendMessage( "Created "..Line1.." shop (".._check.count..countString.." for "..Line3..")" )
+					LOG( PLUGIN:GetName().." reporting: created a shop at( "..inX..":"..inY..":"..inZ.." ) by ".._ownername.." ["..Line1.."]" )
+					if( Settings.SaveMode == eSaveMode_Paranoid ) then
 						SaveData()
 					end
 				end
 			else
-				IN_player:SendMessage( "Fill chest with items you want to sell first" )
+				inPlayer:SendMessage( "Fill chest with items you want to sell first" )
 			end
 		end
 	end
 	-- now we got to check for cash machine!
-	if( BARTER == true ) then
+	if( Settings.Barter == true ) then
 		if( Line2 == ""
 		and Line3 == ""
 		and Line4 == "" ) then
@@ -174,18 +181,18 @@ function OnUpdatingSign( IN_world, IN_x, IN_y, IN_z, Line1, Line2, Line3, Line4,
 				Line3 = ""
 				Line4 = ""
 				
-				if( CheckCashMachineChest( IN_player:GetWorld(), IN_x, IN_y - 1, IN_z ) == 1 ) then
+				if( CheckCashMachineChest( inPlayer:GetWorld(), inX, inY - 1, inZ ) == 1 ) then
 					-- OK, there's a chest and we got a sign, let's turn it into motherfucking CASH MACHINE!
 					Line1 = "Cash Machine"
 					Line3 = "belong to"
 					Line4 = _ownername
-					RegisterCashMachine( IN_player:GetWorld(), IN_player:GetName(), IN_x, IN_y, IN_z )
-					LOG( PLUGIN:GetName().." reporting: created a cash machine at( "..IN_x..":"..IN_y..":"..IN_z.." ) by ".._ownername )
+					RegisterCashMachine( inPlayer:GetWorld(), inPlayer:GetName(), inX, inY, inZ )
+					LOG( PLUGIN:GetName().." reporting: created a cash machine at( "..inX..":"..inY..":"..inZ.." ) by ".._ownername )
 					if( SaveMode == eSaveMode_Paranoid ) then
 						SaveData()
 					end
 				else
-					IN_player:SendMessage( "There's no fucking chest, how are you supposed to keep your piles of... whatever?!" )
+					inPlayer:SendMessage( "There's no fucking chest, how are you supposed to keep your piles of... whatever?!" )
 				end
 			end
 		end
@@ -195,67 +202,67 @@ function OnUpdatingSign( IN_world, IN_x, IN_y, IN_z, Line1, Line2, Line3, Line4,
 	--return true, Line1, Line2, Line3, Line4
 end
 -- LEFTCLICK!
-function OnPlayerLeftClick( IN_player, IN_x, IN_y, IN_z, BlockFace, Status, OldBlock, OldMeta )
-	if( IN_x ~= -1 and IN_y ~= 255 and IN_z ~= -1 ) then
-		if( BREAKING_NON_OWNER_PROTECTION == true ) then
-			if( CheckShopThere( IN_player:GetWorld(), IN_x, IN_y +1, IN_z ) == true ) then	-- we know we're clicking on a chest with shop!
-				local _adress = GetAdress( IN_player:GetWorld(), IN_x, IN_y +1, IN_z )
-				if( ShopsData[_adress].ownername ~= IN_player:GetName() ) then	--											<<< DOOMSDAY DEVICE
+function OnPlayerLeftClick( inPlayer, inX, inY, inZ, inFace, inAction )
+	if( inX ~= -1 and inY ~= 255 and inZ ~= -1 ) then
+		if( Settings.BreakingProtection == true ) then
+			if( CheckShopThere( inPlayer:GetWorld(), inX, inY +1, inZ ) == true ) then	-- we know we're clicking on a chest with shop!
+				local _adress = GetAdress( inPlayer:GetWorld(), inX, inY +1, inZ )
+				if( ShopsData[_adress].ownername ~= inPlayer:GetName() ) then	--											<<< DOOMSDAY DEVICE
 					return true
 				end
 			end
-			local _ownername, _cashmachine = GetCashMachineThere( IN_player:GetWorld(), IN_x, IN_y +1, IN_z )
+			local _ownername, _cashmachine = GetCashMachineThere( inPlayer:GetWorld(), inX, inY +1, inZ )
 			if( _cashmachine ~= nil ) then	-- we know we're clicking on a cash machine!
-				if( _ownername ~= IN_player:GetName() ) then	--															<<< DOOMSDAY DEVICE
+				if( _ownername ~= inPlayer:GetName() ) then	--															<<< DOOMSDAY DEVICE
 					return true
 				end
 			end
 			_ownername = nil
 			_cashmachine = nil
-			_ownername, _cashmachine = GetCashMachineThere( IN_player:GetWorld(), IN_x, IN_y, IN_z )
+			_ownername, _cashmachine = GetCashMachineThere( inPlayer:GetWorld(), inX, inY, inZ )
 			if( _cashmachine ~= nil ) then
-				if( _ownername ~= IN_player:GetName() ) then	--															<<< DOOMSDAY DEVICE
+				if( _ownername ~= inPlayer:GetName() ) then	--															<<< DOOMSDAY DEVICE
 					return true
 				end
 			end
 		end
 		
-		_items_traded = SellToShop( IN_player:GetWorld(), IN_player, IN_x, IN_y, IN_z )
+		_items_traded = SellToShop( inPlayer:GetWorld(), inPlayer, inX, inY, inZ )
 		if( _items_traded > 0 ) then
-			if( OPERATION_STATE.partial == true ) then
-				IN_player:SendMessage( MESSAGES.partial_transfer )
+			if( OperationState.partial == true ) then
+				inPlayer:SendMessage( Messages.partial_transfer )
 			end
-			local _itemname = HANDY:Call( "PluralItemName", OPERATION_STATE.itemID, OPERATION_STATE.ammount )
-			local _price = OPERATION_STATE.money_ammount
-			if( BARTER == false ) then
-				_price = _price.." "..HANDY:Call( "PluralString", OPERATION_STATE.money_ammount, " coin", " coins" )
+			local _itemname = HANDY:Call( "PluralItemName", OperationState.itemID, OperationState.amount )
+			local _price = OperationState.money_amount
+			if( Settings.Barter == false ) then
+				_price = _price.." "..HANDY:Call( "PluralString", OperationState.money_amount, " coin", " coins" )
 			else
-				_price = _price.." "..HANDY:Call( "PluralItemName", BarterItem, OPERATION_STATE.money_ammount )
+				_price = _price.." "..HANDY:Call( "PluralItemName", Settings.BarterItem, OperationState.money_amount )
 			end
-			IN_player:SendMessage( "Sold "..OPERATION_STATE.ammount.." ".._itemname.." for ".._price..", to "..OPERATION_STATE.merchantname )
+			inPlayer:SendMessage( "Sold "..OperationState.amount.." ".._itemname.." for ".._price..", to "..OperationState.merchantname )
 			if( SaveMode == eSaveMode_Paranoid ) then
 				SaveData()
 			end
 			return true
 		elseif( _items_traded == 0 ) then
-			if( OPERATION_STATE.performed == true ) then
-				OPERATION_STATE.performed = false
-				if( OPERATION_STATE.success == false ) then
-					if( OPERATION_STATE.fail_reason 					== FAIL_REASON.merchant_no_money )		then
-						IN_player:SendMessage( MESSAGES.merchant_no_money )
-						HANDY:Call( "GetPlayerByName", OPERATION_STATE.merchantname ):SendMessage( MESSAGES.to_merchant_no_money )
-					elseif( OPERATION_STATE.fail_reason 				== FAIL_REASON.player_no_space )			then
-						IN_player:SendMessage( MESSAGES.player_no_space )
-					elseif( OPERATION_STATE.fail_reason 				== FAIL_REASON.not_enough_space )		then
-						IN_player:SendMessage( MESSAGES.not_enough_space )
-						local _merchant_message = MESSAGES.to_merchant_not_enough_space..": "..GetShopDescription( IN_player:GetWorld(), IN_x, IN_y, IN_z )
-						HANDY:Call( "GetPlayerByName", OPERATION_STATE.merchantname ):SendMessage( _merchant_message )
-					elseif( OPERATION_STATE.fail_reason 				== FAIL_REASON.not_enough_items )		then
-						IN_player:SendMessage( MESSAGES.not_enough_items )
+			if( OperationState.performed == true ) then
+				OperationState.performed = false
+				if( OperationState.success == false ) then
+					if( OperationState.fail_reason 					== FailReason.merchant_no_money )		then
+						inPlayer:SendMessage( Messages.merchant_no_money )
+						HANDY:Call( "GetPlayerByName", OperationState.merchantname ):SendMessage( Messages.to_merchant_no_money )
+					elseif( OperationState.fail_reason 				== FailReason.player_no_space )			then
+						inPlayer:SendMessage( Messages.player_no_space )
+					elseif( OperationState.fail_reason 				== FailReason.not_enough_space )		then
+						inPlayer:SendMessage( Messages.not_enough_space )
+						local _merchant_message = Messages.to_merchant_not_enough_space..": "..GetShopDescription( inPlayer:GetWorld(), inX, inY, inZ )
+						HANDY:Call( "GetPlayerByName", OperationState.merchantname ):SendMessage( _merchant_message )
+					elseif( OperationState.fail_reason 				== FailReason.not_enough_items )		then
+						inPlayer:SendMessage( Messages.not_enough_items )
 					end
 				else
-					-- means that there were no obstacles other than no items in IN_player at all
-					IN_player:SendMessage( MESSAGES.no_items_in_player )
+					-- means that there were no obstacles other than no items in inPlayer at all
+					inPlayer:SendMessage( Messages.no_items_in_player )
 				end
 				return true
 			end
@@ -265,57 +272,57 @@ function OnPlayerLeftClick( IN_player, IN_x, IN_y, IN_z, BlockFace, Status, OldB
 end
 
 -- RIGHTCLICK!
-function OnPlayerRightClick( IN_player, IN_x, IN_y, IN_z, BlockFace, HeldItem )
-	if( IN_x ~= -1 and IN_y ~= 255 and IN_z ~= -1 ) then
-		if( USING_NON_OWNER_PROTECTION == true ) then
-			if( CheckShopThere( IN_player:GetWorld(), IN_x, IN_y +1, IN_z ) == true ) then	-- we know we're clicking on a chest with shop!
-				local _adress = GetAdress( IN_player:GetWorld(), IN_x, IN_y +1, IN_z )
-				if( ShopsData[_adress].ownername ~= IN_player:GetName() ) then	--											<<< DOOMSDAY DEVICE
+function OnPlayerRightClick( inPlayer, inX, inY, inZ, inFace, inCursorX, inCursorY, inCursorZ )
+	if( inX ~= -1 and inY ~= 255 and inZ ~= -1 ) then
+		if( Settings.UsingProtection == true ) then
+			if( CheckShopThere( inPlayer:GetWorld(), inX, inY +1, inZ ) == true ) then	-- we know we're clicking on a chest with shop!
+				local _adress = GetAdress( inPlayer:GetWorld(), inX, inY +1, inZ )
+				if( ShopsData[_adress].ownername ~= inPlayer:GetName() ) then	--											<<< DOOMSDAY DEVICE
 					return true
 				end
 			end
-			local _ownername, _cashmachine = GetCashMachineThere( IN_player:GetWorld(), IN_x, IN_y +1, IN_z )
+			local _ownername, _cashmachine = GetCashMachineThere( inPlayer:GetWorld(), inX, inY +1, inZ )
 			if( _cashmachine ~= nil ) then	-- we know we're clicking on a cash machine!
-				if( _ownername ~= IN_player:GetName() ) then	--															<<< DOOMSDAY DEVICE
+				if( _ownername ~= inPlayer:GetName() ) then	--															<<< DOOMSDAY DEVICE
 					return true
 				end
 			end
 		end
 		
-		_items_traded = GetFromShop( IN_player:GetWorld(), IN_player, IN_x, IN_y, IN_z )
+		_items_traded = GetFromShop( inPlayer:GetWorld(), inPlayer, inX, inY, inZ )
 		if( _items_traded > 0 ) then
-			if( OPERATION_STATE.partial == true ) then
-				IN_player:SendMessage( MESSAGES.partial_transfer )
+			if( OperationState.partial == true ) then
+				inPlayer:SendMessage( Messages.partial_transfer )
 			end
-			local _itemname = HANDY:Call( "PluralItemName", OPERATION_STATE.itemID, OPERATION_STATE.ammount )
-			local _price = OPERATION_STATE.money_ammount
-			if( BARTER == false ) then
-				_price = _price.." "..HANDY:Call( "PluralString", OPERATION_STATE.money_ammount, " coin", " coins" )
+			local _itemname = HANDY:Call( "PluralItemName", OperationState.itemID, OperationState.amount )
+			local _price = OperationState.money_amount
+			if( Settings.Barter == false ) then
+				_price = _price.." "..HANDY:Call( "PluralString", OperationState.money_amount, " coin", " coins" )
 			else
-				_price = _price.." "..HANDY:Call( "PluralItemName", BarterItem, OPERATION_STATE.money_ammount )
+				_price = _price.." "..HANDY:Call( "PluralItemName", Settings.BarterItem, OperationState.money_amount )
 			end
-			IN_player:SendMessage( "Bought "..OPERATION_STATE.ammount.." ".._itemname.." for ".._price..", from "..OPERATION_STATE.merchantname )
-			if( SaveMode == eSaveMode_Paranoid ) then
+			inPlayer:SendMessage( "Bought "..OperationState.amount.." ".._itemname.." for ".._price..", from "..OperationState.merchantname )
+			if( Settings.SaveMode == eSaveMode_Paranoid ) then
 				SaveData()
 			end
 			return true
 		elseif( _items_traded == 0 ) then
-			if( OPERATION_STATE.performed == true ) then
-				OPERATION_STATE.performed = false
-				if( OPERATION_STATE.success == false ) then
-					if( OPERATION_STATE.fail_reason 				== FAIL_REASON.merchant_no_space )			then
-						IN_player:SendMessage( MESSAGES.merchant_no_space )
-						HANDY:Call( "GetPlayerByName", OPERATION_STATE.merchantname ):SendMessage( MESSAGES.to_merchant_no_space )
-					elseif( OPERATION_STATE.fail_reason 				== FAIL_REASON.player_no_money )				then
-						IN_player:SendMessage( MESSAGES.player_no_money )
-					elseif( OPERATION_STATE.fail_reason 				== FAIL_REASON.player_no_space )				then
-						IN_player:SendMessage( MESSAGES.player_no_space )
-					elseif( OPERATION_STATE.fail_reason 				== FAIL_REASON.not_enough_items )				then
-						IN_player:SendMessage( MESSAGES.not_enough_items )
+			if( OperationState.performed == true ) then
+				OperationState.performed = false
+				if( OperationState.success == false ) then
+					if( OperationState.fail_reason 				== FailReason.merchant_no_space )			then
+						inPlayer:SendMessage( Messages.merchant_no_space )
+						HANDY:Call( "GetPlayerByName", OperationState.merchantname ):SendMessage( Messages.to_merchant_no_space )
+					elseif( OperationState.fail_reason 				== FailReason.player_no_money )				then
+						inPlayer:SendMessage( Messages.player_no_money )
+					elseif( OperationState.fail_reason 				== FailReason.player_no_space )				then
+						inPlayer:SendMessage( Messages.player_no_space )
+					elseif( OperationState.fail_reason 				== FailReason.not_enough_items )				then
+						inPlayer:SendMessage( Messages.not_enough_items )
 					end
 				else
 					-- means that there were no obstacles other than no items in chest at all
-					IN_player:SendMessage( MESSAGES.no_items_in_shop )
+					inPlayer:SendMessage( Messages.no_items_in_shop )
 				end
 				return true
 			end
@@ -324,6 +331,23 @@ function OnPlayerRightClick( IN_player, IN_x, IN_y, IN_z, BlockFace, HeldItem )
 	return false
 end
 -- - - - - -
-function OnPlayerBreakingBlock( IN_player, IN_x, IN_y, IN_z, IN_blockface, IN_blocktype, IN_blockmeta )
+function OnPlayerBreakingBlock( inPlayer, inX, inY, inZ, inFace, inType, inMeta )
 	-- TODO: implement breaking protection here
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
