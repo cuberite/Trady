@@ -1,3 +1,70 @@
+function HandleDebugCommand( inSplit, inPlayer )
+	inPlayer:SendMessage( "TD: Fractional:"..tostring(Settings.FractionalTrade)..", Barter: "..tostring(Settings.Barter)..", Item: "..tostring(Settings.BarterItem)..
+	", SelfTrade: "..tostring(Settings.HaltSelfTrade)..", UsingProt: "..tostring(Settings.UsingProtection)..", BreakProt: "..tostring(Settings.BreakingProtection) )
+end
+
+--|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+function SafetyChecks( inPlayer, inX, inY, inZ, inBreaking )
+	-- Returns: should return, return value
+	-- Shop checks
+	local foundShop = false
+	local clickedChest = false
+	if( CheckShopThere( inPlayer:GetWorld(), inX, inY, inZ ) == true ) then
+		foundShop = true
+	end
+	if( CheckShopThere( inPlayer:GetWorld(), inX, inY + 1, inZ ) == true ) then
+		foundShop = true
+		clickedChest = true
+	end
+	
+	if( foundShop ) then
+		local _adress = GetAdress( inPlayer:GetWorld(), inX, inY, inZ )
+		if( clickedChest ) then
+			_adress = GetAdress( inPlayer:GetWorld(), inX, inY + 1, inZ )
+		end
+		if( ShopsData[_adress].ownername ~= inPlayer:GetName() ) then
+			if( clickedChest ) then
+				local returnValue = false
+				if( inBreaking ) then
+					returnValue = (Settings.BreakingProtection == true)
+				else
+					returnValue = (Settings.UsingProtection == true)
+				end
+				return true, returnValue -------------------
+			else
+				return false, false -------------------
+			end
+		else
+			if( Settings.HaltSelfTrade or clickedChest ) then
+				return true, false -------------------
+			else
+				return false, false -------------------
+			end
+		end
+	end
+	
+	-- Cash machine checks
+	local _ownername, _cashmachine = GetCashMachineThere( inPlayer:GetWorld(), inX, inY, inZ )
+	if( _cashmachine == nil ) then
+		_ownername, _cashmachine = GetCashMachineThere( inPlayer:GetWorld(), inX, inY + 1, inZ )
+	end
+	
+	if( _cashmachine ~= nil ) then
+		if( _ownername ~= inPlayer:GetName() ) then
+			local returnValue = false
+			if( inBreaking ) then
+				returnValue = (Settings.BreakingProtection == true)
+			else
+				returnValue = (Settings.UsingProtection == true)
+			end
+			return true, returnValue -------------------
+		else
+			return true, false -------------------
+		end
+	end
+	
+	return false, false
+end
 --|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 function CheckShopChest( inWorld, inX, inY, inZ )			-- RETURNS WHAT IS IN THE CHEST AND IN WHICH amount
 	local ReadChest = function( inChest )
@@ -76,6 +143,14 @@ function CheckCashMachineThere( inWorld, inX, inY, inZ )
 	end
 	return _result
 end
+-- * * * * *
+function GetShopDescription( inWorld, inX, inY, inZ )
+	local _adress = GetAdress( inWorld, inX, inY, inZ )
+	if( ShopsData[_adress] ~= nil ) then
+		return HANDY:Call( "PluralItemName", ShopsData[_adress].item, 10 ).." @["..inX.."; "..inY.."; "..inZ.."] in "..ShopsData[_adress].world:GetName()
+	end
+	return "no shop found"
+end
 
 function GetCashMachineThere( inWorld, inX, inY, inZ )
 	for k,v in pairs( TradersData ) do
@@ -90,7 +165,7 @@ function GetCashMachineThere( inWorld, inX, inY, inZ )
 	end
 	return nil, nil
 end
-
+-- * * * * *
 function RegisterShop( inWorld, inOwnerName, inX, inY, inZ, inItemID, inAmount, inToChest, inFromChest, inFractionalTrade )
 	LOG( "Getting adress" )
 	local _adress = GetAdress( inWorld, inX, inY, inZ )
@@ -129,12 +204,32 @@ function RegisterCashMachine( inWorld, inOwnerName, inX, inY, inZ )
 	TradersData[inOwnerName].cashmachine.world = inWorld
 end
 -- * * * * *
-function GetShopDescription( inWorld, inX, inY, inZ )
-	local _adress = GetAdress( inWorld, inX, inY, inZ )
-	if( ShopsData[_adress] ~= nil ) then
-		return HANDY:Call( "PluralItemName", ShopsData[_adress].item, 10 ).." @["..inX.."; "..inY.."; "..inZ.."] in "..ShopsData[_adress].world:GetName()
+function CheckDestroyThings( inPlayer, inX, inY, inZ )
+	if( CheckShopThere( inPlayer:GetWorld(), inX, inY, inZ ) == true ) then	-- we know we're clicking on a chest with shop!
+		local _adress = GetAdress( inPlayer:GetWorld(), inX, inY, inZ )
+		if( ShopsData[_adress].ownername == inPlayer:GetName()
+		or inPlayer:HasPermission( "trady.delete" ) ) then
+			DestroyShop( _adress, inPlayer )
+		end
 	end
-	return "no shop found"
+	local _ownername, _cashmachine = GetCashMachineThere( inPlayer:GetWorld(), inX, inY, inZ )
+	if( _cashmachine ~= nil ) then	-- we know we're clicking on a cash machine!
+		if( _ownername == inPlayer:GetName() ) then	--															<<< DOOMSDAY DEVICE
+			DestroyCashMachine( _ownername, inPlayer )
+		end
+	end
+end
+
+function DestroyShop( inAdress, inDestroyer )
+	ShopsData[inAdress] = nil
+	inDestroyer:SendMessage( "Destroyed a shop @ "..inAdress )
+	-- TODO: add console messaging here
+end
+
+function DestroyCashMachine( inOwnerName, inDestroyer )
+	TradersData[inOwnerName] = nil
+	inDestroyer:SendMessage( "Destroyed "..inAdress.."'s cash machine" )
+	-- TODO: add console messaging here
 end
 --\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 --/ / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / /
@@ -370,7 +465,6 @@ end
 
 function MakeTransaction( inPlayerName, inMerchantName, inAmount, inOperationFromChest )	-- UNSAFE, CHECK FIRST
 	if( Settings.Barter == false ) then
-		LOG( "Trying to charge player "..inPlayerName.." for "..inAmount.." coins" )
 		COINY:Call( "TransferMoney", inPlayerName, inMerchantName, tonumber( inAmount ) )
 	else
 		-- coins, coins everywhere!
@@ -494,8 +588,9 @@ function LoadSettings()
 	Settings.Barter = 				iniFile:GetValueSetB( "Settings", "Barter", 				false )
 	Settings.BarterItem	= 			BlockStringToType( barterItem )
 	Settings.HaltSelfTrade = 		iniFile:GetValueSetB( "Settings", "HaltSelfTrade", 			true )
-	Settings.UsingProtection = 		iniFile:GetValueSetB( "Settings", "AllowUsingProtection", 	true )
-	Settings.BreakingProtection = 	iniFile:GetValueSetB( "Settings", "AllowBreakingProtection",true )
+	LOG( "Ini reading on HaltSelf: "..tostring(Settings.HaltSelfTrade) )
+	Settings.UsingProtection = 		iniFile:GetValueSetB( "Settings", "UsingProtection", 	true )
+	Settings.BreakingProtection = 	iniFile:GetValueSetB( "Settings", "BreakingProtection",true )
 	iniFile:WriteFile( PLUGIN:GetLocalDirectory().."/trady_settings.ini" )
 end
 function SaveSettings()
@@ -513,8 +608,8 @@ function SaveSettings()
 	iniFile:SetValueB( "Settings", "Barter", 				Settings.Barter, 						false )
 	iniFile:SetValue(  "Settings", "BarterItem", 			ItemTypeToString( Settings.BarterItem ),false )
 	iniFile:SetValueB( "Settings", "HaltSelfTrade", 		Settings.HaltSelfTrade, 				false )
-	iniFile:SetValueB( "Settings", "AllowUsingProtection", 	Settings.UsingProtection, 				false )
-	iniFile:SetValueB( "Settings", "AllowBreakingProtection", Settings.BreakingProtection, 			false )
+	iniFile:SetValueB( "Settings", "UsingProtection", 		Settings.UsingProtection, 				false )
+	iniFile:SetValueB( "Settings", "BreakingProtection", 	Settings.BreakingProtection, 			false )
 	iniFile:WriteFile( PLUGIN:GetLocalDirectory().."/trady_settings.ini" )
 end
 --|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||

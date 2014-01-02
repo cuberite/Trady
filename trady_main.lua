@@ -27,7 +27,7 @@ eSaveMode_Dont = 100500
 
 -- Settings
 Settings = {}
-Settings.SaveMode = eSaveMode_Timed
+Settings.SaveMode = eSaveMode_Dont
 Settings.SaveEveryNthTick = 2000
 Settings.FractionalTrade = true
 Settings.Barter = false
@@ -92,6 +92,8 @@ function Initialize( Plugin )
 		LOGERROR( PLUGIN:GetName().." v"..PLUGIN:GetVersion().." needs Handy v"..HandyRequiredVersion..", shutting down" )
 		return false
 	end
+	
+	PluginManager:BindCommand( "/td", "core.help", HandleDebugCommand, "- Trady debug" )
 	
 	cPluginManager.AddHook( cPluginManager.HOOK_PLAYER_LEFT_CLICK, OnPlayerLeftClick )
 	cPluginManager.AddHook( cPluginManager.HOOK_PLAYER_RIGHT_CLICK, OnPlayerRightClick )
@@ -204,29 +206,12 @@ end
 -- LEFTCLICK!
 function OnPlayerLeftClick( inPlayer, inX, inY, inZ, inFace, inAction )
 	if( inX ~= -1 and inY ~= 255 and inZ ~= -1 ) then
-		if( Settings.BreakingProtection == true ) then
-			if( CheckShopThere( inPlayer:GetWorld(), inX, inY +1, inZ ) == true ) then	-- we know we're clicking on a chest with shop!
-				local _adress = GetAdress( inPlayer:GetWorld(), inX, inY +1, inZ )
-				if( ShopsData[_adress].ownername ~= inPlayer:GetName() ) then	--											<<< DOOMSDAY DEVICE
-					return true
-				end
-			end
-			local _ownername, _cashmachine = GetCashMachineThere( inPlayer:GetWorld(), inX, inY +1, inZ )
-			if( _cashmachine ~= nil ) then	-- we know we're clicking on a cash machine!
-				if( _ownername ~= inPlayer:GetName() ) then	--															<<< DOOMSDAY DEVICE
-					return true
-				end
-			end
-			_ownername = nil
-			_cashmachine = nil
-			_ownername, _cashmachine = GetCashMachineThere( inPlayer:GetWorld(), inX, inY, inZ )
-			if( _cashmachine ~= nil ) then
-				if( _ownername ~= inPlayer:GetName() ) then	--															<<< DOOMSDAY DEVICE
-					return true
-				end
-			end
+		local shouldReturn, returnValue = SafetyChecks( inPlayer, inX, inY, inZ, true )
+		if( shouldReturn ) then
+			return returnValue
 		end
 		
+		-- Operating
 		_items_traded = SellToShop( inPlayer:GetWorld(), inPlayer, inX, inY, inZ )
 		if( _items_traded > 0 ) then
 			if( OperationState.partial == true ) then
@@ -274,19 +259,9 @@ end
 -- RIGHTCLICK!
 function OnPlayerRightClick( inPlayer, inX, inY, inZ, inFace, inCursorX, inCursorY, inCursorZ )
 	if( inX ~= -1 and inY ~= 255 and inZ ~= -1 ) then
-		if( Settings.UsingProtection == true ) then
-			if( CheckShopThere( inPlayer:GetWorld(), inX, inY +1, inZ ) == true ) then	-- we know we're clicking on a chest with shop!
-				local _adress = GetAdress( inPlayer:GetWorld(), inX, inY +1, inZ )
-				if( ShopsData[_adress].ownername ~= inPlayer:GetName() ) then	--											<<< DOOMSDAY DEVICE
-					return true
-				end
-			end
-			local _ownername, _cashmachine = GetCashMachineThere( inPlayer:GetWorld(), inX, inY +1, inZ )
-			if( _cashmachine ~= nil ) then	-- we know we're clicking on a cash machine!
-				if( _ownername ~= inPlayer:GetName() ) then	--															<<< DOOMSDAY DEVICE
-					return true
-				end
-			end
+		local shouldReturn, returnValue = SafetyChecks( inPlayer, inX, inY, inZ, false )
+		if( shouldReturn ) then
+			return returnValue
 		end
 		
 		_items_traded = GetFromShop( inPlayer:GetWorld(), inPlayer, inX, inY, inZ )
@@ -330,9 +305,13 @@ function OnPlayerRightClick( inPlayer, inX, inY, inZ, inFace, inCursorX, inCurso
 	end
 	return false
 end
--- - - - - -
+-- DESTROY!
 function OnPlayerBreakingBlock( inPlayer, inX, inY, inZ, inFace, inType, inMeta )
-	-- TODO: implement breaking protection here
+	if( inX ~= -1 and inY ~= 255 and inZ ~= -1 ) then
+		CheckDestroyThings( inPlayer, inX, inY, inZ )
+		CheckDestroyThings( inPlayer, inX, inY + 1, inZ )
+	end
+	return false
 end
 
 
