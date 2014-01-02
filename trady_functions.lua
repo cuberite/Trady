@@ -100,18 +100,23 @@ function CheckShopChest( inWorld, inX, inY, inZ )			-- RETURNS WHAT IS IN THE CH
 end
 
 function CheckIntegrity( inWorld, inX, inY, inZ )			-- check on SIGN placement
-	_result = -1
-	local ReadChest = function( Chest )
+	local foundChest = false
+	local foundSign = false
+	local TestChest = function( Chest )
 		if( Chest ~= nil ) then
-			_result = _result + 1
+			foundChest = true
 		end
 	end
-	inWorld:DoWithChestAt( inX, inY - 1, inZ, ReadChest )
-	_sign = inWorld:GetSignLines( inX, inY, inZ, _line1, _line2, _line3, _line4 )
-	if( _sign ~= false ) then
-		_result = _result + 1
+	inWorld:DoWithChestAt( inX, inY - 1, inZ, TestChest )
+	local sign = inWorld:GetSignLines( inX, inY, inZ, _line1, _line2, _line3, _line4 )
+	if( sign ~= false ) then
+		foundSign = true
 	end
-	return _result
+	
+	if( foundChest and foundSign ) then		return true		end
+	
+	DestroyShop( GetAdress( inWorld, inX, inY, inZ ) )
+	return false
 end
 
 function CheckCashMachineChest( inWorld, inX, inY, inZ )	-- we just want to know if some chest is even there :D
@@ -134,7 +139,7 @@ end
 function CheckCashMachineThere( inWorld, inX, inY, inZ )
 	local _result = false
 	for k,v in pairs( TradersData ) do
-		if( v.cashmachine.world == inWorld
+		if( v.cashmachine.world == inWorld:GetName()
 		and v.cashmachine.x == inX
 		and v.cashmachine.y == inY
 		and v.cashmachine.z == inZ ) then
@@ -147,7 +152,7 @@ end
 function GetShopDescription( inWorld, inX, inY, inZ )
 	local _adress = GetAdress( inWorld, inX, inY, inZ )
 	if( ShopsData[_adress] ~= nil ) then
-		return HANDY:Call( "PluralItemName", ShopsData[_adress].item, 10 ).." @["..inX.."; "..inY.."; "..inZ.."] in "..ShopsData[_adress].world:GetName()
+		return (HANDY:Call( "PluralItemName", ShopsData[_adress].item, 10 ).." @["..inX.."; "..inY.."; "..inZ.."] in "..ShopsData[_adress].world)
 	end
 	return "no shop found"
 end
@@ -155,7 +160,7 @@ end
 function GetCashMachineThere( inWorld, inX, inY, inZ )
 	for k,v in pairs( TradersData ) do
 		if( v.cashmachine ~= nil ) then
-			if( v.cashmachine.world == inWorld
+			if( v.cashmachine.world == inWorld:GetName()
 			and v.cashmachine.x == inX
 			and v.cashmachine.y == inY
 			and v.cashmachine.z == inZ ) then
@@ -172,7 +177,7 @@ function RegisterShop( inWorld, inOwnerName, inX, inY, inZ, inItemID, inAmount, 
 	LOG( "Got adress" )
 	if( ShopsData[_adress] == nil )				then ShopsData[_adress] = {} end
 	ShopsData[_adress].ownername = inOwnerName
-	ShopsData[_adress].world = inWorld	-- NOT A NAME!
+	ShopsData[_adress].world = inWorld:GetName()
 	
 	ShopsData[_adress].x = inX
 	ShopsData[_adress].y = inY
@@ -201,7 +206,7 @@ function RegisterCashMachine( inWorld, inOwnerName, inX, inY, inZ )
 	TradersData[inOwnerName].cashmachine.x = inX
 	TradersData[inOwnerName].cashmachine.y = inY
 	TradersData[inOwnerName].cashmachine.z = inZ
-	TradersData[inOwnerName].cashmachine.world = inWorld
+	TradersData[inOwnerName].cashmachine.world = inWorld:GetName()
 end
 -- * * * * *
 function CheckDestroyThings( inPlayer, inX, inY, inZ )
@@ -221,8 +226,12 @@ function CheckDestroyThings( inPlayer, inX, inY, inZ )
 end
 
 function DestroyShop( inAdress, inDestroyer )
-	ShopsData[inAdress] = nil
+	DestroyShop( inAdress )
 	inDestroyer:SendMessage( "Destroyed a shop @ "..inAdress )
+end
+
+function DestroyShop( inAdress )
+	ShopsData[inAdress] = nil
 	-- TODO: add console messaging here
 end
 
@@ -233,7 +242,7 @@ function DestroyCashMachine( inOwnerName, inDestroyer )
 end
 --\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 --/ / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / /
-function GetFromShop( inWorld, inPlayer, inX, inY, inZ )
+function BuyFromShop( inWorld, inPlayer, inX, inY, inZ )
 	local OperateChest = function( Chest )
 		local _c_balance, _c_free_space = HANDY:Call( "ReadChestForItem", Chest, ShopsData[_adress].item )
 		_trade_count = math.min( _trade_count, _c_balance )
@@ -249,6 +258,10 @@ function GetFromShop( inWorld, inPlayer, inX, inY, inZ )
 	local _result = 0	-- will contain amount of traded items
 	OperationState.success = false
 	OperationState.partial = false
+	local integral = CheckIntegrity( inWorld, inX, inY, inZ )
+	if( not integral ) then
+		return -1
+	end
 	
 	if( ShopsData[_adress] ~= nil ) then
 		if( ShopsData[_adress].fromchest ~= -1 ) then
@@ -345,6 +358,10 @@ function SellToShop( inWorld, inPlayer, inX, inY, inZ )
 	local _result = 0	-- will contain amount of traded items
 	OperationState.success = false
 	OperationState.partial = false
+	local integral = CheckIntegrity( inWorld, inX, inY, inZ )
+	if( not integral ) then
+		return -1
+	end
 	
 	if( ShopsData[_adress] ~= nil ) then
 		if( ShopsData[_adress].tochest ~= -1 ) then
@@ -443,7 +460,8 @@ function GetMerchantTradeData( inMerchantName )
 				local _x = TradersData[inMerchantName].cashmachine.x
 				local _y = TradersData[inMerchantName].cashmachine.y -1
 				local _z = TradersData[inMerchantName].cashmachine.z
-				TradersData[inMerchantName].cashmachine.world:DoWithChestAt( _x, _y, _z, CheckCashMachine )
+				local world = cRoot:Get():GetWorld( TradersData[inMerchantName].cashmachine.world )
+				world:DoWithChestAt( _x, _y, _z, CheckCashMachine )
 			end
 		end
 	end
@@ -482,7 +500,8 @@ function MakeTransaction( inPlayerName, inMerchantName, inAmount, inOperationFro
 		local _x = TradersData[inMerchantName].cashmachine.x
 		local _y = TradersData[inMerchantName].cashmachine.y - 1
 		local _z = TradersData[inMerchantName].cashmachine.z
-		TradersData[inMerchantName].cashmachine.world:DoWithChestAt( _x, _y, _z, OperateCashMachine )
+		local world = cRoot:Get():GetWorld( TradersData[inMerchantName].cashmachine.world )
+		world:DoWithChestAt( _x, _y, _z, OperateCashMachine )
 		
 		-- 2. Make operations with pockets
 		if( inOperationFromChest == true ) then
@@ -494,69 +513,101 @@ function MakeTransaction( inPlayerName, inMerchantName, inAmount, inOperationFro
 end
 --|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 function LoadData()
---	local _split = ""
---	file = io.open( PLUGIN:GetLocalDirectory().."/trady_shops.dat", "r" )
---	if( file == nil ) then		return 1	end
---	for line in file:lines() do
---		_split = LineSplit( line, ":" )
---		-- _split validation!!!
---		if( #_split == 10 ) then
---			local _adress = GetAdress( cRoot:Get():GetWorld( _split[2] ), _split[3], _split[4], _split[5] )
---			if( CheckIntegrity( cRoot:Get():GetWorld( _split[2] ), _split[3], _split[4], _split[5] ) == 2 ) then
---				if( ShopsData[_adress] == nil ) then
---					ShopsData[_adress] = {}	-- create shop's page
---				end
---				ShopsData[_adress].ownername = _split[1]
---				ShopsData[_adress].world = cRoot:Get():GetWorld( _split[2] )
---				ShopsData[_adress].x = _split[3]
---				ShopsData[_adress].y = _split[4]
---				ShopsData[_adress].z = _split[5]
---				ShopsData[_adress].item = _split[6]
---				ShopsData[_adress].amount = _split[7]
---				ShopsData[_adress].tochest = _split[8]
---				ShopsData[_adress].fromchest = _split[9]
---				ShopsData[_adress].fractional = HANDY:Call( "StringToBool", _split[10] )
---			else
---				LOGINFO( "Got an invalid note! ".._adress )
---			end
---		end
---	end
---	file:close()
---	-- / / / / / / / / / / / /
---	file = io.open( PLUGIN:GetLocalDirectory().."/trady_merchants.dat", "r" )
---	if( file == nil ) then		return 1	end
---	for line in file:lines() do
---		_split = LineSplit( line, ":" )
---		-- _split validation!!!
---		if( #_split == 5 ) then
---			if( CheckIntegrity( cRoot:Get():GetWorld( _split[2] ), _split[3], _split[4], _split[5] ) == 2 ) then
---				if( TradersData[_split[1]] == nil ) then
---					TradersData[_split[1]] = {}	-- create merchant's page
---				end
---				if( TradersData[_split[1]].cashmachine == nil ) then
---					TradersData[_split[1]].cashmachine = {}	-- and don't forget his cash machine too!
---				end
---				TradersData[_split[1]].cashmachine.world = cRoot:Get():GetWorld( _split[2] )
---				TradersData[_split[1]].cashmachine.x = _split[3]
---				TradersData[_split[1]].cashmachine.y = _split[4]
---				TradersData[_split[1]].cashmachine.z = _split[5]
---			end
---		end
---	end
---	file:close()
+	local _split = ""
+	LOGINFO( "L1" )
+	file = io.open( PLUGIN:GetLocalDirectory().."/trady_shops.dat", "r" )
+	LOGINFO( "L2" )
+	if( file == nil ) then		return 1	end
+	LOGINFO( "L3" )
+	for line in file:lines() do
+		LOGINFO( "L3.1" )
+		_split = LineSplit( line, ":" )
+		LOGINFO( "L3.2" )
+		-- _split validation!!!
+		if( #_split == 10 ) then
+			LOGINFO( "L3.2.1" )
+			local _adress = GetAdress( cRoot:Get():GetWorld( _split[2] ), _split[3], _split[4], _split[5] )
+			LOGINFO( "L3.2.2" )
+			if( ShopsData[_adress] == nil ) then
+				LOGINFO( "L3.2.2.1" )
+				ShopsData[_adress] = {}	-- create shop's page
+				LOGINFO( "L3.2.2.2" )
+			end
+			LOGINFO( "L3.2.3" )
+			ShopsData[_adress].ownername = _split[1]
+			LOGINFO( "L3.2.4" )
+			ShopsData[_adress].world = _split[2]
+			LOGINFO( "L3.2.5" )
+			ShopsData[_adress].x = tonumber( _split[3] )
+			LOGINFO( "L3.2.6" )
+			ShopsData[_adress].y = tonumber( _split[4] )
+			LOGINFO( "L3.2.7" )
+			ShopsData[_adress].z = tonumber( _split[5] )
+			LOGINFO( "L3.2.8" )
+			ShopsData[_adress].item = tonumber( _split[6] )
+			LOGINFO( "L3.2.9" )
+			ShopsData[_adress].amount = tonumber( _split[7] )
+			LOGINFO( "L3.2.10" )
+			ShopsData[_adress].tochest = tonumber( _split[8] )
+			LOGINFO( "L3.2.11" )
+			ShopsData[_adress].fromchest = tonumber( _split[9] )
+			LOGINFO( "L3.2.12" )
+			ShopsData[_adress].fractional = StringToBool( _split[10] )
+		end
+	end
+	LOGINFO( "L4" )
+	file:close()
+	LOGINFO( "L5" )
+	-- / / / / / / / / / / / /
+	file = io.open( PLUGIN:GetLocalDirectory().."/trady_merchants.dat", "r" )
+	LOGINFO( "L6" )
+	if( file == nil ) then		return 1	end
+	LOGINFO( "L7" )
+	for line in file:lines() do
+		LOGINFO( "L7.1" )
+		_split = LineSplit( line, ":" )
+		LOGINFO( "L7.2" )
+		-- _split validation!!!
+		if( #_split == 5 ) then
+			LOGINFO( "L7.2.1" )
+			if( TradersData[_split[1]] == nil ) then
+				LOGINFO( "L7.2.1.1" )
+				TradersData[_split[1]] = {}	-- create merchant's page
+				LOGINFO( "L7.2.1.2" )
+			end
+			LOGINFO( "L7.2.3" )
+			if( TradersData[_split[1]].cashmachine == nil ) then
+				LOGINFO( "L7.2.3.1" )
+				TradersData[_split[1]].cashmachine = {}	-- and don't forget his cash machine too!
+				LOGINFO( "L7.2.3.2" )
+			end
+			LOGINFO( "L7.2.4" )
+			TradersData[_split[1]].cashmachine.world = _split[2]
+			LOGINFO( "L7.2.5" )
+			TradersData[_split[1]].cashmachine.x = _split[3]
+			LOGINFO( "L7.2.6" )
+			TradersData[_split[1]].cashmachine.y = _split[4]
+			LOGINFO( "L7.2.7" )
+			TradersData[_split[1]].cashmachine.z = _split[5]
+			LOGINFO( "L7.2.8" )
+		end
+	end
+	LOGINFO( "L8" )
+	file:close()
+	LOGINFO( "BA DUM TSSSSSS.... Loading complete!" )
 end
 function SaveData()
 	local line = ""
 	file = io.open( PLUGIN:GetLocalDirectory().."/trady_shops.dat", "w" )
 	for k,v in pairs( ShopsData ) do
 		line = ""..v.ownername
-		line = line..":"..v.world:GetName()
+		line = line..":"..v.world
 		line = line..":"..v.x..":"..v.y..":"..v.z
 		line = line..":"..v.item
 		line = line..":"..v.amount
 		line = line..":"..v.tochest
 		line = line..":"..v.fromchest
-		line = line..":"..HANDY:Call( "BoolToString", v.fractional )
+		line = line..":"..tostring( v.fractional )
 		file:write( line.."\n" )
 	end
 	file:close()
@@ -565,9 +616,9 @@ function SaveData()
 	for k,v in pairs( TradersData ) do
 		if( v.cashmachine ~= nil ) then
 			line = ""..k
-			line = line..":"..v.cashmachine.world:GetName()
+			line = line..":"..v.cashmachine.world
 			line = line..":"..v.cashmachine.x..":"..v.cashmachine.y..":"..v.cashmachine.z
-			--file:write( line.."\n" )
+			file:write( line.."\n" )
 		end
 	end
 	file:close()
@@ -640,3 +691,21 @@ end
 function GetAdressWorldname( inWorldname, inX, inY, inZ )	-- PROBABLY USELESS
 	return inWorldname.." x:"..tostring( inX ).." y:"..tostring( inY ).." z:"..tostring( inZ )
 end
+--|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+function StringToBool( inString )
+	if( inString == "true" ) then	return true		end
+	return false
+end
+
+
+
+
+
+
+
+
+
+
+
+
+

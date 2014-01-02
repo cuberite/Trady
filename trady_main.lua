@@ -2,10 +2,8 @@
 TODO:
 - too much to write, lol
 - actually, not:
-0. Save/load CHECK if shop/cashmachine was broken!
-1. DELETE shop/cashmachine if owner breaks a sign or chest!
-2. FIX: no chest, correct sign, reports "fill the chest"
 3. WEB panel to set shit up
+4. Check/revive "barter"
 ]]
 
 -- Global variables
@@ -27,7 +25,7 @@ eSaveMode_Dont = 100500
 
 -- Settings
 Settings = {}
-Settings.SaveMode = eSaveMode_Dont
+Settings.SaveMode = eSaveMode_Paranoid
 Settings.SaveEveryNthTick = 2000
 Settings.FractionalTrade = true
 Settings.Barter = false
@@ -255,7 +253,6 @@ function OnPlayerLeftClick( inPlayer, inX, inY, inZ, inFace, inAction )
 	end
 	return false
 end
-
 -- RIGHTCLICK!
 function OnPlayerRightClick( inPlayer, inX, inY, inZ, inFace, inCursorX, inCursorY, inCursorZ )
 	if( inX ~= -1 and inY ~= 255 and inZ ~= -1 ) then
@@ -264,7 +261,7 @@ function OnPlayerRightClick( inPlayer, inX, inY, inZ, inFace, inCursorX, inCurso
 			return returnValue
 		end
 		
-		_items_traded = GetFromShop( inPlayer:GetWorld(), inPlayer, inX, inY, inZ )
+		_items_traded = BuyFromShop( inPlayer:GetWorld(), inPlayer, inX, inY, inZ )
 		if( _items_traded > 0 ) then
 			if( OperationState.partial == true ) then
 				inPlayer:SendMessage( Messages.partial_transfer )
