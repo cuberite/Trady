@@ -16,6 +16,7 @@ How to install:
 How to setup:
 =====
 All settings are in "Plugins/Trady/trady_settings.ini" file. Those are following:
+
 1. SaveMode: Timed, Paranoid, Relaxed, Dont; Timed will save every Nth tick, Paranoid will save on every change, Relaxed will save ONLY on server REGULAR shutdown, Dont won't save at all. BEWARE - trade operations won't be reverted automagically!;
 2. TicksPerSave: 1200 ticks approximately are similar to one minute, so defaul 2000 is a big overkill;
 3. Barter: 0/1 to toggle barter trading (could be broken ATM, so try at your own risk);
