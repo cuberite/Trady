@@ -514,87 +514,50 @@ end
 --|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 function LoadData()
 	local _split = ""
-	LOGINFO( "L1" )
 	file = io.open( PLUGIN:GetLocalDirectory().."/trady_shops.dat", "r" )
-	LOGINFO( "L2" )
 	if( file == nil ) then		return 1	end
-	LOGINFO( "L3" )
 	for line in file:lines() do
-		LOGINFO( "L3.1" )
 		_split = LineSplit( line, ":" )
-		LOGINFO( "L3.2" )
 		-- _split validation!!!
 		if( #_split == 10 ) then
-			LOGINFO( "L3.2.1" )
 			local _adress = GetAdress( cRoot:Get():GetWorld( _split[2] ), _split[3], _split[4], _split[5] )
-			LOGINFO( "L3.2.2" )
 			if( ShopsData[_adress] == nil ) then
-				LOGINFO( "L3.2.2.1" )
 				ShopsData[_adress] = {}	-- create shop's page
-				LOGINFO( "L3.2.2.2" )
 			end
-			LOGINFO( "L3.2.3" )
 			ShopsData[_adress].ownername = _split[1]
-			LOGINFO( "L3.2.4" )
 			ShopsData[_adress].world = _split[2]
-			LOGINFO( "L3.2.5" )
 			ShopsData[_adress].x = tonumber( _split[3] )
-			LOGINFO( "L3.2.6" )
 			ShopsData[_adress].y = tonumber( _split[4] )
-			LOGINFO( "L3.2.7" )
 			ShopsData[_adress].z = tonumber( _split[5] )
-			LOGINFO( "L3.2.8" )
 			ShopsData[_adress].item = tonumber( _split[6] )
-			LOGINFO( "L3.2.9" )
 			ShopsData[_adress].amount = tonumber( _split[7] )
-			LOGINFO( "L3.2.10" )
 			ShopsData[_adress].tochest = tonumber( _split[8] )
-			LOGINFO( "L3.2.11" )
 			ShopsData[_adress].fromchest = tonumber( _split[9] )
-			LOGINFO( "L3.2.12" )
 			ShopsData[_adress].fractional = StringToBool( _split[10] )
 		end
 	end
-	LOGINFO( "L4" )
 	file:close()
-	LOGINFO( "L5" )
 	-- / / / / / / / / / / / /
 	file = io.open( PLUGIN:GetLocalDirectory().."/trady_merchants.dat", "r" )
-	LOGINFO( "L6" )
 	if( file == nil ) then		return 1	end
-	LOGINFO( "L7" )
 	for line in file:lines() do
-		LOGINFO( "L7.1" )
 		_split = LineSplit( line, ":" )
-		LOGINFO( "L7.2" )
 		-- _split validation!!!
 		if( #_split == 5 ) then
-			LOGINFO( "L7.2.1" )
 			if( TradersData[_split[1]] == nil ) then
-				LOGINFO( "L7.2.1.1" )
 				TradersData[_split[1]] = {}	-- create merchant's page
-				LOGINFO( "L7.2.1.2" )
 			end
-			LOGINFO( "L7.2.3" )
 			if( TradersData[_split[1]].cashmachine == nil ) then
-				LOGINFO( "L7.2.3.1" )
 				TradersData[_split[1]].cashmachine = {}	-- and don't forget his cash machine too!
-				LOGINFO( "L7.2.3.2" )
 			end
-			LOGINFO( "L7.2.4" )
 			TradersData[_split[1]].cashmachine.world = _split[2]
-			LOGINFO( "L7.2.5" )
 			TradersData[_split[1]].cashmachine.x = _split[3]
-			LOGINFO( "L7.2.6" )
 			TradersData[_split[1]].cashmachine.y = _split[4]
-			LOGINFO( "L7.2.7" )
 			TradersData[_split[1]].cashmachine.z = _split[5]
-			LOGINFO( "L7.2.8" )
 		end
 	end
-	LOGINFO( "L8" )
 	file:close()
-	LOGINFO( "BA DUM TSSSSSS.... Loading complete!" )
+	LOGINFO( PLUGIN:GetName().." v"..PLUGIN:GetVersion()..": BA DUM TSSSSSS.... Loading complete!" )
 end
 function SaveData()
 	local line = ""
