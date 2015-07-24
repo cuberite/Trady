@@ -8,9 +8,9 @@ TODO:
 
 -- Global variables
 PLUGIN = {}	-- Reference to own plugin object
-HANDY = {}	-- here, HANDY candy!
 COINY = {}		-- stay COINY, maaaaaan!
-HandyRequiredVersion = 2
+CHEST_WIDTH = 9
+
 
 -- Logics
 ShopsData = {}
@@ -82,16 +82,9 @@ function Initialize( Plugin )
 	PLUGIN:SetName( "Trady" )
 	PLUGIN:SetVersion( 2 )
 	
-	PluginManager = cRoot:Get():GetPluginManager()
-	COINY = PluginManager:GetPlugin( "Coiny" )
-	HANDY = cRoot:Get():GetPluginManager():GetPlugin( "Handy" )
-	local properHandy = HANDY:Call( "CheckForRequiedVersion", HandyRequiredVersion )
-	if( not properHandy ) then
-		LOGERROR( PLUGIN:GetName().." v"..PLUGIN:GetVersion().." needs Handy v"..HandyRequiredVersion..", shutting down" )
-		return false
-	end
+	PM = cPluginManager
 	
-	PluginManager:BindCommand( "/td", "core.help", HandleDebugCommand, "- Trady debug" )
+	cPluginManager:BindCommand( "/td", "core.help", HandleDebugCommand, "- Trady debug" )
 	
 	cPluginManager.AddHook( cPluginManager.HOOK_PLAYER_LEFT_CLICK, OnPlayerLeftClick )
 	cPluginManager.AddHook( cPluginManager.HOOK_PLAYER_RIGHT_CLICK, OnPlayerRightClick )
@@ -99,7 +92,6 @@ function Initialize( Plugin )
 	cPluginManager.AddHook( cPluginManager.HOOK_UPDATING_SIGN, OnUpdatingSign )
 	cPluginManager.AddHook( cPluginManager.HOOK_TICK, OnTick )
 	
-	--Plugin:AddWebTab( "Trady", HandleRequest_ChestShop )
 	LoadSettings()
 	LoadData()
 	LOG( "Initialized "..PLUGIN:GetName().." v"..PLUGIN:GetVersion() )
@@ -133,7 +125,7 @@ function OnUpdatingSign( inWorld, inX, inY, inZ, Line1, Line2, Line3, Line4, inP
 			local _to_chest_price = tonumber( _split[2] )		-- inPlayer sells something to chest
 			local _amount_override = -1
 			if( Line2 ~= "" ) then	_amount_override = tonumber( Line2 )	end
-			local _fractional_trade = not HANDY:Call( "StringToBool", Line3 )
+			local _fractional_trade = not StringToBool(Line3)
 			
 			Line1 = ""
 			Line2 = ""
@@ -158,7 +150,7 @@ function OnUpdatingSign( inWorld, inX, inY, inZ, Line1, Line2, Line3, Line4, inP
 					Line4 = inPlayer:GetName()
 					
 					RegisterShop( inPlayer:GetWorld(), inPlayer:GetName(), inX, inY, inZ, _check.type, _check.count, _to_chest_price, _from_chest_price, _fractional_trade )
-					local countString = HANDY:Call( "PluralString", _check.count, " piece", " pieces" )
+					local countString = PluralString( _check.count, " piece", " pieces" )
 					inPlayer:SendMessage( "Created "..Line1.." shop (".._check.count..countString.." for "..Line3..")" )
 					LOG( PLUGIN:GetName().." reporting: created a shop at( "..inX..":"..inY..":"..inZ.." ) by ".._ownername.." ["..Line1.."]" )
 					if( Settings.SaveMode == eSaveMode_Paranoid ) then
@@ -215,12 +207,12 @@ function OnPlayerLeftClick( inPlayer, inX, inY, inZ, inFace, inAction )
 			if( OperationState.partial == true ) then
 				inPlayer:SendMessage( Messages.partial_transfer )
 			end
-			local _itemname = HANDY:Call( "PluralItemName", OperationState.itemID, OperationState.amount )
+			local _itemname = PluralItemName(OperationState.itemID, OperationState.amount)
 			local _price = OperationState.money_amount
 			if( Settings.Barter == false ) then
-				_price = _price.." "..HANDY:Call( "PluralString", OperationState.money_amount, " coin", " coins" )
+				_price = _price.." "..PluralString(OperationState.money_amount, " coin", " coins")
 			else
-				_price = _price.." "..HANDY:Call( "PluralItemName", Settings.BarterItem, OperationState.money_amount )
+				_price = _price.." "..PluralItemName(Settings.BarterItem, OperationState.money_amount)
 			end
 			inPlayer:SendMessage( "Sold "..OperationState.amount.." ".._itemname.." for ".._price..", to "..OperationState.merchantname )
 			if( SaveMode == eSaveMode_Paranoid ) then
@@ -233,13 +225,13 @@ function OnPlayerLeftClick( inPlayer, inX, inY, inZ, inFace, inAction )
 				if( OperationState.success == false ) then
 					if( OperationState.fail_reason 					== FailReason.merchant_no_money )		then
 						inPlayer:SendMessage( Messages.merchant_no_money )
-						HANDY:Call( "GetPlayerByName", OperationState.merchantname ):SendMessage( Messages.to_merchant_no_money )
+						GetPlayerByName(OperationState.merchantname):SendMessage(Messages.to_merchant_no_money)
 					elseif( OperationState.fail_reason 				== FailReason.player_no_space )			then
 						inPlayer:SendMessage( Messages.player_no_space )
 					elseif( OperationState.fail_reason 				== FailReason.not_enough_space )		then
 						inPlayer:SendMessage( Messages.not_enough_space )
 						local _merchant_message = Messages.to_merchant_not_enough_space..": "..GetShopDescription( inPlayer:GetWorld(), inX, inY, inZ )
-						HANDY:Call( "GetPlayerByName", OperationState.merchantname ):SendMessage( _merchant_message )
+						GetPlayerByName(OperationState.merchantname ):SendMessage( _merchant_message )
 					elseif( OperationState.fail_reason 				== FailReason.not_enough_items )		then
 						inPlayer:SendMessage( Messages.not_enough_items )
 					end
@@ -266,12 +258,12 @@ function OnPlayerRightClick( inPlayer, inX, inY, inZ, inFace, inCursorX, inCurso
 			if( OperationState.partial == true ) then
 				inPlayer:SendMessage( Messages.partial_transfer )
 			end
-			local _itemname = HANDY:Call( "PluralItemName", OperationState.itemID, OperationState.amount )
+			local _itemname = PluralItemName(OperationState.itemID, OperationState.amount)
 			local _price = OperationState.money_amount
 			if( Settings.Barter == false ) then
-				_price = _price.." "..HANDY:Call( "PluralString", OperationState.money_amount, " coin", " coins" )
+				_price = _price.." "..PluralString(OperationState.money_amount, " coin", " coins")
 			else
-				_price = _price.." "..HANDY:Call( "PluralItemName", Settings.BarterItem, OperationState.money_amount )
+				_price = _price.." "..PluralItemName(Settings.BarterItem, OperationState.money_amount)
 			end
 			inPlayer:SendMessage( "Bought "..OperationState.amount.." ".._itemname.." for ".._price..", from "..OperationState.merchantname )
 			if( Settings.SaveMode == eSaveMode_Paranoid ) then
@@ -284,7 +276,7 @@ function OnPlayerRightClick( inPlayer, inX, inY, inZ, inFace, inCursorX, inCurso
 				if( OperationState.success == false ) then
 					if( OperationState.fail_reason 				== FailReason.merchant_no_space )			then
 						inPlayer:SendMessage( Messages.merchant_no_space )
-						HANDY:Call( "GetPlayerByName", OperationState.merchantname ):SendMessage( Messages.to_merchant_no_space )
+						GetPlayerByName(OperationState.merchantname ):SendMessage( Messages.to_merchant_no_space )
 					elseif( OperationState.fail_reason 				== FailReason.player_no_money )				then
 						inPlayer:SendMessage( Messages.player_no_money )
 					elseif( OperationState.fail_reason 				== FailReason.player_no_space )				then
