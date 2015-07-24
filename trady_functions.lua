@@ -445,7 +445,6 @@ end
 --\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \
 --///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 function GetMerchantTradeData( inMerchantName )
-	print(inMerchantName)
 	local CheckCashMachine = function( Chest )
 		_balance, _free_space = ReadChestForItem(Chest, Settings.BarterItem)
 	end
